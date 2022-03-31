@@ -1,3 +1,11 @@
+echo "apt-get update"
+sudo apt-get update
+echo "."
+sleep 0.1
+echo ".."
+sleep 0.1
+echo "..."
+sleep 0.1
 echo "installing nrpe"
 sudo apt-get install nagios-nrpe-server -y
 echo "."
