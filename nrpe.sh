@@ -58,6 +58,8 @@ echo "Adding Mem Check in /etc/nagios/nrpe_local.cfg"
 echo 'command[check_mem]=/usr/lib/nagios/plugins/check_mem -f -w 4 -c 2' | sudo tee -a /etc/nagios/nrpe_local.cfg
 echo "Adding check ro mounts in /etc/nagios/nrpe_local.cfg"
 echo 'command[check_ro_mounts]=/usr/lib/nagios/plugins/check_ro_mounts -x /sys/fs/cgroup' | sudo tee -a /etc/nagios/nrpe_local.cfg
+echo "Adding check uptime in /etc/nagios/nrpe_local.cfg"
+echo 'command[check_uptime]=/usr/lib/nagios/plugins/check_uptime' | sudo tee -a /etc/nagios/nrpe_local.cfg
 echo "."
 sleep 0.1
 echo "."
