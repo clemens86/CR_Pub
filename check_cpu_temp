@@ -1,0 +1,66 @@
+#!/bin/bash
+#
+# Author: Clemens Schuster
+# Version: 1.0
+# License: GNU GENERAL PUBLIC LICENSE Version 3
+#
+# -----------------------------------------------------------------------------------------------------------
+#  Plugin Description
+# -----------------------------------------------------------------------------------------------------------
+#
+# This script checks the CPU Package Temperature via lm-sensors  on a Linux system
+#
+# Usage:
+# ./check_cpu_temperature -w <warning threshold> -c <critical threshold>
+#
+#
+# Output:
+# OK       - if the CPU Temp is below the warning and critical thresholds
+# WARNING  - if the CPU Temp is under the warning threshold and it is above the critical threshold
+# CRITICAL - if the CPU Temp is above the critical threshold
+#
+# ---------------------------------------- License ----------------------------------------------------------
+#
+# This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------------------------------------
+
+#get the package Temperature
+PACKAGE_TEMP=$(sensors | grep 'Package' |  awk 'END {print $4}' | cut -c2-3)
+
+if [ "$1" = "-w" ] && [ "$2" -lt "100" ] && [ "$3" = "-c" ] && [ "$4" -lt "100" ] ; then
+  warn=$2
+  crit=$4
+
+  if [ ${PACKAGE_TEMP} -lt $warn ] && [ ${PACKAGE_TEMP} -lt $crit ];then
+    echo "OK - CPU Temp = ${PACKAGE_TEMP}°C. | CPU Temperature=${PACKAGE_TEMP}°C;$warn;$crit"
+    exit 0
+  elif [ ${PACKAGE_TEMP} -gt $warn ] && [ ${PACKAGE_TEMP} -lt $crit ]; then
+    echo "WARNING - CPU Temp = ${PACKAGE_TEMP}°C. | CPU Temperature=${PACKAGE_TEMP}°C;$warn;$crit"
+    exit 1
+  else
+    echo "CRITICAL - CPU Temp = ${PACKAGE_TEMP}°C. | CPU Temperature=${PACKAGE_TEMP}°C;$warn;$crit"
+    exit 2
+  fi
+else
+  echo "$0 - Nagios Plugin for checking the CPU Package Temperature via lm-sensors in a Linux system"
+  echo ""
+  echo "Usage:    $0 -w <warnlevel> -c <critlevel>"
+  echo "  = warnlevel and critlevel is warning and critical value for alerts."
+  echo ""
+  echo "EXAMPLE:  $0 -w 70 -c 85 "
+  echo "  = This will send warning alert when the cpu temp is above 70 degrees and send critical when it is above 85 degrees C."
+  echo ""
+  exit 3
+fi
