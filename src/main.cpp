@@ -13,6 +13,10 @@
 //MQTT Sub Topics
 #define MQTT_SUB_RES "esp/reset/AlienRFID"
 
+//Serial2 Conn
+#define RXD2 9 //SD DATA2 links unten
+#define TXD2 10 //SD_DATA3 links unten
+
 // INCLUDES
 #include "Arduino.h"
 // Download from https://github.com/playfultechnology/PN5180-Library
@@ -66,7 +70,8 @@ void connectToWifi() {
 }
 
 void connectToMqtt() {
-  Serial.println("Connecting to MQTT...");
+  Serial.print("Connecting to MQTT ");
+  Serial.println(MQTT_HOST);
   mqttClient.connect();
 }
 
@@ -80,7 +85,7 @@ void WiFiEvent(WiFiEvent_t event) {
         connectToMqtt();
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
-        Serial.println("WiFi lost connection");
+        Serial.println("ERROR: WiFi lost connection");
         break;
     }
 }
@@ -102,25 +107,11 @@ void onMqttConnect(bool sessionPresent) {
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
-  Serial.println("Disconnected from MQTT.");
+  Serial.println("ERROR: Disconnected from MQTT.");
 
   if (WiFi.isConnected()) {
     connectToMqtt();
   }
-}
-
-void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
-  Serial.println("Subscribe acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
-  Serial.print("  qos: ");
-  Serial.println(qos);
-}
-
-void onMqttUnsubscribe(uint16_t packetId) {
-  Serial.println("Unsubscribe acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
@@ -131,9 +122,13 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   for (int i = 0; i < len; i++) {
     Serial.print((char)payload[i]);
   }
-  if ((char)payload[0] == '1') {
-    Serial.println("Restarting ESP.");
-    ESP.restart();
+  if(strcmp(topic, MQTT_SUB_RES) == 0) { //match //Variable = MQTT_SUB_RES = esp/reset/AlienRFID
+    Serial.println("");
+    Serial.println("reset  topic");
+    if ((char)payload[0] == '1') {
+      Serial.println("Restarting ESP.");
+      ESP.restart();
+    }
   }
 }
 
@@ -158,11 +153,10 @@ void shex(char* store, byte* from, byte len) {
 void setup() {
   // Initialise serial connection
   Serial.begin(115200);  
+  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2); //HW Serial
   WiFi.onEvent(WiFiEvent);
   mqttClient.onConnect(onMqttConnect);
   mqttClient.onDisconnect(onMqttDisconnect);
-  mqttClient.onSubscribe(onMqttSubscribe);
-  mqttClient.onUnsubscribe(onMqttUnsubscribe);
   mqttClient.onMessage(onMqttMessage);
   //mqttClient.onPublish(onMqttPublish);
   mqttClient.setServer(MQTT_HOST, MQTT_PORT);
@@ -189,7 +183,8 @@ void setup() {
 
 void loop() {
   unsigned long currentMillis = millis();
-  Serial.println(F("Starting loop"));
+  Serial.print(F("."));
+  Serial2.println("Starting loop HW Serial");
   nfc14443.reset();
   nfc14443.setupRF();
   uint8_t thisUid[4] = {0x00,0x00,0x00,0x00};
@@ -226,5 +221,5 @@ void loop() {
   shex(pubClearUid, clearUid, sizeof(thisUid));
   mqttClient.publish(MQTT_PUB_UID, 1, true, pubClearUid);
     }
-    Serial.println(F("Ending loop"));
+    Serial.print(F("."));
     }
